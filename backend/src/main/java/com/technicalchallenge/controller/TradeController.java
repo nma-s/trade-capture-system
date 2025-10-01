@@ -141,7 +141,14 @@ public class TradeController {
         logger.info("Deleting trade with id: {}", id);
         try {
             tradeService.deleteTrade(id);
-            return ResponseEntity.ok().body("Trade cancelled successfully");
+//               return ResponseEntity.ok().body("Trade cancelled successfully");
+
+/*               Removed ResponseEntity.ok().body("Trade cancelled successfully")
+                 as it returns status code 200 and
+                 body response not required with status code 204.
+                 Replaced with ResponseEntity.noContent().build()
+ */
+                return ResponseEntity.noContent().build();
         } catch (Exception e) {
             logger.error("Error deleting trade: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("Error deleting trade: " + e.getMessage());
