@@ -44,6 +44,9 @@ public class TradeDTO {
 
     // Book reference
     private Long bookId;
+    // NS: Added @NotNull Annotation for bookName as TradeDTO should require at least one identifier for the Book
+    // either name or ID
+    @NotNull(message = "Book name is required")
     private String bookName;
 
     // Counterparty reference
