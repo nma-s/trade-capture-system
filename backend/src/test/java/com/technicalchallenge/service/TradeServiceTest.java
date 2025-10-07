@@ -96,7 +96,8 @@ class TradeServiceTest {
         });
 
         // This assertion is intentionally wrong - candidates need to fix it
-        assertEquals("Wrong error message", exception.getMessage());
+        // NS: Changed from "Wrong error message" to "Start date cannot be before trade date"
+        assertEquals("Start date cannot be before trade date", exception.getMessage());
     }
 
     @Test
@@ -178,6 +179,6 @@ class TradeServiceTest {
         // When - method call is missing
 
         // Then - assertions are wrong/missing
-        assertEquals(1, 12); // This will always fail - candidates need to fix
+ mju            assertEquals(1, 12); // This will always fail - candidates need to fix
     }
 }
