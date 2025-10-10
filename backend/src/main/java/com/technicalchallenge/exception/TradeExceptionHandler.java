@@ -27,7 +27,10 @@ public class TradeExceptionHandler {
         if (errors.contains("bookName") || errors.contains("counterparty")) {
             return ResponseEntity.badRequest().body("Book and Counterparty are required");
         }
-//        return ResponseEntity.badRequest().body("Book and Counterparty are required");
+        if (errors.contains("notional")) {
+            return ResponseEntity.badRequest().body("Notional must be positive");
+        }
+//      return ResponseEntity.badRequest().body("Book and Counterparty are required");
         return ResponseEntity.badRequest().build();
     }
 }
