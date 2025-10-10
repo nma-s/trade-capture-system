@@ -179,6 +179,6 @@ class TradeServiceTest {
         // When - method call is missing
 
         // Then - assertions are wrong/missing
- mju            assertEquals(1, 12); // This will always fail - candidates need to fix
+        assertEquals(1, 12); // This will always fail - candidates need to fix
     }
 }
