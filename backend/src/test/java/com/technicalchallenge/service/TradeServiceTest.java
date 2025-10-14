@@ -2,12 +2,8 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.model.Trade;
-import com.technicalchallenge.model.TradeLeg;
-import com.technicalchallenge.repository.CashflowRepository;
-import com.technicalchallenge.repository.TradeLegRepository;
-import com.technicalchallenge.repository.TradeRepository;
-import com.technicalchallenge.repository.TradeStatusRepository;
+import com.technicalchallenge.model.*;
+import com.technicalchallenge.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +21,12 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TradeServiceTest {
+
+    @Mock
+    private BookRepository bookRepository;
+
+    @Mock
+    private CounterpartyRepository counterpartyRepository;
 
     @Mock
     private TradeRepository tradeRepository;
@@ -46,6 +48,9 @@ class TradeServiceTest {
 
     private TradeDTO tradeDTO;
     private Trade trade;
+//    Added fields for book and counterParty
+    private Book book;
+    private Counterparty counterParty;
 
     @BeforeEach
     void setUp() {
@@ -69,14 +74,34 @@ class TradeServiceTest {
         trade = new Trade();
         trade.setId(1L);
         trade.setTradeId(100001L);
+        trade.setVersion(1);
+
+//     Set book and counterparty
+
+        book = new Book();
+        book.setBookName("FX-BOOK-2");
+
+        counterParty = new Counterparty();
+        counterParty.setName("GiantCash");
+
     }
 
     @Test
     void testCreateTrade_Success() {
+
+        tradeDTO.setBookName(book.getBookName());
+        tradeDTO.setCounterpartyName(counterParty.getName());
+//        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
+
         // Given
+        when(bookRepository.findByBookName("FX-BOOK-2")).thenReturn(Optional.of(new com.technicalchallenge.model.Book()));
+        when(counterpartyRepository.findByName("GiantCash")).thenReturn(Optional.of(new com.technicalchallenge.model.Counterparty()));
+        when(tradeStatusRepository.findByTradeStatus("NEW")).thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new com.technicalchallenge.model.TradeLeg());
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
         // When
+
         Trade result = tradeService.createTrade(tradeDTO);
 
         // Then
