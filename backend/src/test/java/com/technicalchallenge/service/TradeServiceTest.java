@@ -168,6 +168,7 @@ class TradeServiceTest {
         // Given
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
         when(tradeStatusRepository.findByTradeStatus("AMENDED")).thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new com.technicalchallenge.model.TradeLeg());
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
         // When
