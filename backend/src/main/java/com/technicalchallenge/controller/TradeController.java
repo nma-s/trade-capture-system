@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -225,11 +226,14 @@ public class TradeController {
     public List<TradeDTO> getTradesByCriteria(
             @RequestParam(required = false) String counterpartyName,
             @RequestParam(required = false) String bookName,
-            @RequestParam(required = false) String traderUserName) {
-        logger.debug("Fetching trades by counterparty name: {}, book name: {}, tradeUserName: {}", counterpartyName,bookName, traderUserName);
+            @RequestParam(required = false) String traderUserName,
+            @RequestParam(required = false) String tradeStatus,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        logger.debug("Fetching trades by counterparty name: {}, book name: {}, tradeUserName: {}, tradeStatus: {} and start date ranges between {} and {} " , counterpartyName,bookName, traderUserName, tradeStatus, startDate, endDate);
         return tradeService.findBySearch(counterpartyName,
                         bookName,
-                        traderUserName)
+                        traderUserName, tradeStatus,startDate,endDate)
                 .stream().map(tradeMapper::toDto).toList();
     }
 }
