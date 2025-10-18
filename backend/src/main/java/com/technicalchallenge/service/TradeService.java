@@ -5,6 +5,7 @@ import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -587,5 +588,24 @@ public class TradeService {
     private Long generateNextTradeId() {
         // For simplicity, using a static variable. In real scenario, this should be atomic and thread-safe.
         return 10000L + tradeRepository.count();
+    }
+
+    public List<Trade> findBySearch(String counterpartyName, String bookName, String traderUserName) {
+
+        Specification<Trade> spec = Specification.where(null);
+
+        if(counterpartyName != null){
+            spec.and(TradeSpecification.hasCounterpartyName(counterpartyName));
+        }
+
+        if(bookName != null){
+            spec.and(TradeSpecification.hasBookName(bookName));
+        }
+
+        if(traderUserName != null){
+            spec.and(TradeSpecification.hasTraderName(bookName));
+        }
+
+        return tradeRepository.findAll(spec);
     }
 }
