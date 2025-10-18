@@ -590,20 +590,41 @@ public class TradeService {
         return 10000L + tradeRepository.count();
     }
 
-    public List<Trade> findBySearch(String counterpartyName, String bookName, String traderUserName) {
+    public List<Trade> findBySearch(String counterpartyName,
+                                    String bookName,
+                                    String traderUserName,
+                                    String tradeStatus,
+                                    String startDate,
+                                    String endDate) {
 
         Specification<Trade> spec = Specification.where(null);
 
         if(counterpartyName != null){
-            spec.and(TradeSpecification.hasCounterpartyName(counterpartyName));
+           spec = spec.and(TradeSpecification.hasCounterpartyName(counterpartyName));
         }
 
         if(bookName != null){
-            spec.and(TradeSpecification.hasBookName(bookName));
+            spec = spec.and(TradeSpecification.hasBookName(bookName));
         }
 
         if(traderUserName != null){
-            spec.and(TradeSpecification.hasTraderName(bookName));
+            spec = spec.and(TradeSpecification.hasTraderName(traderUserName));
+        }
+
+        if(tradeStatus != null){
+            spec = spec.and(TradeSpecification.hasTradeStatus(tradeStatus));
+        }
+
+        if(startDate != null && endDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBetween(startDate,endDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateFrom(startDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBefore(endDate));
         }
 
         return tradeRepository.findAll(spec);
