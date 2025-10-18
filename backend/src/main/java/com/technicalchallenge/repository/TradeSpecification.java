@@ -72,6 +72,4 @@ public class TradeSpecification {
                     .get("tradeStartDate"), LocalDate.parse(startDate));
         };
     }
-
-
 }
