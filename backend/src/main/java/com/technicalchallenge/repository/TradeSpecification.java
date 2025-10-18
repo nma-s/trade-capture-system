@@ -31,25 +31,47 @@ public class TradeSpecification {
     public static Specification<Trade> hasBookName(String name) {
         return (root, query, criteriaBuilder) -> {
             return criteriaBuilder.equal(criteriaBuilder.lower(root
-                    .join("book")
-                    .get("name")), name.toLowerCase());
+                    .get("book")
+                    .get("bookName")), name.toLowerCase());
         };
     }
-
+    //    trader first name filter
     public static Specification<Trade> hasTraderName(String traderUserName){
         return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root
-                    .get("traderUser")
-                    .get("name"), traderUserName);
+            return criteriaBuilder.equal(criteriaBuilder.lower(root
+                    .join("traderUser")
+                    .get("firstName")), traderUserName.toLowerCase());
         };
     }
-
-//    public  static Specification<Trade>  hasStartDateFrom(LocalDate startDate){
-//        return (root, query, criteriaBuilder) -> {
-//            return criteriaBuilder.greaterThanOrEqualTo(root
-//                    .get("tradeStartDate"), startDate);
-//        };
-//    }
+    //    trade status filter
+    public static Specification<Trade> hasTradeStatus(String tradeStatus){
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.equal(criteriaBuilder.lower(root
+                    .get("tradeStatus")
+                    .get("tradeStatus")), tradeStatus.toLowerCase());
+        };
+    }
+    //    date range filter
+    public  static Specification<Trade>  hasStartDateBetween(String startDate,String endDate){
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.between(root
+                    .get("tradeStartDate"), LocalDate.parse(startDate),LocalDate.parse(endDate));
+        };
+    }
+    //    from date filter
+    public  static Specification<Trade>  hasStartDateFrom(String startDate){
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.greaterThanOrEqualTo(root
+                    .get("tradeStartDate"), LocalDate.parse(startDate));
+        };
+    }
+    //    before date filter
+    public  static Specification<Trade>  hasStartDateBefore(String startDate){
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.lessThanOrEqualTo(root
+                    .get("tradeStartDate"), LocalDate.parse(startDate));
+        };
+    }
 
 
 }
