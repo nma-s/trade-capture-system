@@ -72,10 +72,12 @@ class TradeServiceTest {
         TradeLegDTO leg1 = new TradeLegDTO();
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
+        leg1.setCalculationPeriodSchedule("3M");
 
         TradeLegDTO leg2 = new TradeLegDTO();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.0);
+        leg2.setCalculationPeriodSchedule("3M");
 
         tradeDTO.setTradeLegs(Arrays.asList(leg1, leg2));
 
@@ -208,19 +210,26 @@ class TradeServiceTest {
 
         // Given - setup is incomplete
 
+        Cashflow cashflow = new Cashflow();
+
+        Schedule schedule = new Schedule();
+        schedule.setId(1L);
+        schedule.setSchedule("3M");
+
         //  Set up TradeLegs
         TradeLeg leg1 = new TradeLeg();
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
         leg1.setLegId(1L);
-        leg1.setCalculationPeriodSchedule(new Schedule());
-        leg1.setCashflows(Arrays.asList(new Cashflow()));
+        leg1.setCalculationPeriodSchedule(schedule);
+//        leg1.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
 
         TradeLeg leg2 = new TradeLeg();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.05);
         leg2.setLegId(2L);
-        leg2.setCalculationPeriodSchedule(new Schedule());
+        leg2.setCalculationPeriodSchedule(schedule);
+//        leg2.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
 
         trade.setTradeLegs(Arrays.asList(leg1,leg2));
         trade.setTradeStartDate(LocalDate.of(2025, 1, 17));
@@ -229,9 +238,6 @@ class TradeServiceTest {
         LegType legType = new LegType();
         legType.setType("Fixed");
 
-        Schedule schedule = new Schedule();
-        schedule.setSchedule("1M");
-
 
         //    Set up TradeDTO (set required fields - book, counterparty, trade status)
         tradeDTO.setBookName(book.getBookName());
@@ -239,24 +245,33 @@ class TradeServiceTest {
         tradeDTO.setTradeStatus("NEW");
 
 
+
         when(bookRepository.findByBookName(any(String.class))).thenReturn(Optional.of(book));
         when(counterpartyRepository.findByName(any(String.class))).thenReturn(Optional.of(counterParty));
         when(tradeStatusRepository.findByTradeStatus(any(String.class))).thenReturn(Optional.of(new TradeStatus()));
         when(legTypeRepository.findByType("Fixed")).thenReturn(Optional.of(legType));
         when(scheduleRepository.findBySchedule(any(String.class))).thenReturn(Optional.of(schedule));
-        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(leg1).thenReturn(leg2);
+//        when(cashflowRepository.findById(any(Long.class))).thenReturn(Optional.of(new Cashflow()));
+//        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
+//        when(cashflowRepository.save(any(Cashflow.class))).thenReturn(cashflow);
 
 
         // When - method call is missing
         Trade result = tradeService.createTrade(tradeDTO);
 
+//        int cashflowCountLeg1 = result.getTradeLegs().get(0).getCashflows().size();
+//        int cashflowCountLeg2 = result.getTradeLegs().get(1).getCashflows().size();
+//        int cashflowCount = cashflowCountLeg2 + cashflowCountLeg1;
         int cashflowCount = 0;
-        for(int i = 0; i <= result.getTradeLegs().size(); i++){
+
+        for(int i = 0; i < result.getTradeLegs().size(); i++){
+
             cashflowCount += result.getTradeLegs().get(i).getCashflows().size();
         }
 
         // Then - assertions are wrong/missing
-        assertEquals(8, cashflowCount); // This will always fail - candidates need to fix
+        assertEquals(4, cashflowCount); // This will always fail - candidates need to fix
     }
 }
