@@ -91,10 +91,24 @@ public class TradeService {
 
         // Create trade entity
         Trade trade = mapDTOToEntity(tradeDTO);
-        // mapDTOToEntity does not populate the trade status from the DTO so I have set trade status
+        // mapDTOToEntity does not populate the trade status or trade user from the DTO
+        // so I have set trade status and trade user
         TradeStatus tradeStatus = new TradeStatus();
         tradeStatus.setTradeStatus(tradeDTO.getTradeStatus());
         trade.setTradeStatus(tradeStatus);
+//        ApplicationUser tradeUser = new ApplicationUser();
+//        // Application User has a first name and last name field
+//        // However tradeDTO has tradeUserName which is s combination of the two fields
+//        // which means tradeDTO tradeUserName needs to be separated so both fields can
+//        // be set within the Application User object and used to map to the trade entity
+//        tradeUser.setId(tradeDTO.getTraderUserId());
+//        String fullName = tradeDTO.getTraderUserName();
+//        String[] nameSplit = fullName.split("\\s+",2);
+//        String firstName = nameSplit[0];
+//        String lastName = nameSplit.length > 1 ? nameSplit[1] : null;
+//        tradeUser.setFirstName(firstName);
+//        tradeUser.setLastName(lastName);
+//        trade.setTraderUser(tradeUser);
         trade.setVersion(1);
         trade.setActive(true);
         trade.setCreatedDate(LocalDateTime.now());
@@ -647,13 +661,14 @@ public class TradeService {
 
         // Validate essential reference data is populated
         if (tradeDTO.getBookId() == null || tradeDTO.getBookName() == null) {
-            referenceValidationResult.addError("Book Id or Name cannot be null ");
+            referenceValidationResult.addError("Book Id or Book Name cannot be null ");
         }
         if (tradeDTO.getCounterpartyId() == null || tradeDTO.getCounterpartyName()== null) {
             referenceValidationResult.addError("Counterparty details cannot be null");
         }
         if (tradeDTO.getTradeStatus() == null) {
-            referenceValidationResult.addError("Trade status not found or not set");
+            referenceValidationResult.addError("Trade status not found or not set." +
+                    " Chose from (NEW/AMENDED/LIVE/TERMINATED/DEAD/CANCELED");
         }
         if (tradeDTO.getTraderUserId() == null || tradeDTO.getTraderUserName() == null){
             referenceValidationResult.addError("Trade User details cannot be null");
@@ -669,11 +684,17 @@ public class TradeService {
         Optional<Counterparty> counterpartyOptional = counterpartyRepository.findByName(tradeDTO.getCounterpartyName());
         Counterparty counterparty = counterpartyOptional.orElse(null);
 
+        Optional<ApplicationUser> applicationUserOptional = applicationUserRepository.findById(tradeDTO.getTraderUserId());
+        ApplicationUser applicationUser = applicationUserOptional.orElse(null);
+
         if (book != null && !book.isActive()) {
-            referenceValidationResult.addError("Book must be Active ");
+            referenceValidationResult.addError("Book must be active ");
         }
         if(counterparty != null && !counterparty.isActive()){
-            referenceValidationResult.addError("Counterparty must be Active");
+            referenceValidationResult.addError("Counterparty must be active");
+        }
+        if(applicationUser != null && !applicationUser.isActive()){
+            referenceValidationResult.addError("User must be active");
         }
         return referenceValidationResult;
     }
