@@ -6,6 +6,8 @@ import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.repository.TradeSpecification;
 import com.technicalchallenge.service.TradeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -236,4 +238,50 @@ public class TradeController {
                         traderUserName, tradeStatus,startDate,endDate)
                 .stream().map(tradeMapper::toDto).toList();
     }
+
+
+    //    Filtered Pagination endpoint
+
+    @GetMapping("/filter")
+    @Operation(summary = "Get paginated trade by counterparty, book, trader, status, date ranges",
+            description = "Retrieves a list of trades matching the search criteria")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Trades found and returned successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TradeDTO.class))),
+    })
+
+    public List<TradeDTO> getTradesByFilter(
+            @RequestParam(required = false) String counterpartyName,
+            @RequestParam(required = false) String bookName,
+            @RequestParam(required = false) String traderUserName,
+            @RequestParam(required = false) String tradeStatus,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "0") int pageNo,
+            @RequestParam(required = false, defaultValue = "5") int pageSize) {
+        logger.debug("Fetching trades by counterparty name: {}, book name: {}, tradeUserName: {}, tradeStatus: {} and start date ranges between {} and {} " , counterpartyName,bookName, traderUserName, tradeStatus, startDate, endDate);
+        return tradeService.findByPageFilter(counterpartyName,
+                        bookName,
+                        traderUserName, tradeStatus,startDate,endDate,pageNo,pageSize)
+                .stream().map(tradeMapper::toDto).toList();
+    }
+
+    //    RSQL endpoint
+
+//    @GetMapping("/rsql")
+//    @Operation(summary = "Get trade by rsql query",
+//            description = "Retrieves a list of trades matching rsql search")
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "Trades found and returned successfully",
+//                    content = @Content(mediaType = "application/json",
+//                            schema = @Schema(implementation = TradeDTO.class))),
+//    })
+
+//    public List<TradeDTO> getrsql(
+//            @RequestParam(name = "query", required = false) String query) {
+//        logger.debug("Fetching trades by query: {}" , query);
+//        return tradeService.findByRsql(query).stream().map(tradeMapper::toDto).toList();
+//    }
+
 }

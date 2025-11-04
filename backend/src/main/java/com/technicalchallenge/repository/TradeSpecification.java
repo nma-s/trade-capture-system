@@ -3,6 +3,8 @@ package com.technicalchallenge.repository;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.model.Trade;
+import cz.jirutka.rsql.parser.RSQLParser;
+import cz.jirutka.rsql.parser.ast.Node;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -72,4 +74,12 @@ public class TradeSpecification {
                     .get("tradeStartDate"), LocalDate.parse(startDate));
         };
     }
+
+//    public  static Specification<Trade>  rsql(String rsqlQuery){
+//        return (root, query, criteriaBuilder) -> {
+//            if (rsqlQuery == null || rsqlQuery.isBlank()) return null;
+//            Node rsql = new RSQLParser().parse(rsqlQuery);
+//            return rsql.accept(new TradeRSQLVisitor(), root);
+//        };
+//    }
 }
