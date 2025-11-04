@@ -79,13 +79,13 @@ public class TradeService {
             tradeDTO.setTradeId(generatedTradeId);
             logger.info("Generated trade ID: {}", generatedTradeId);
         }
-
-        // Validate business rules
-        // ADDED METHOD to validate additional business rules as per requirements
-        ValidationResult result = validateTradeBusinessRules(tradeDTO);
-        if (!result.isValid()){
-            throw new IllegalArgumentException("Trade Business Rules failed because of the following errors: " + String.join(", ", result.getErrors()));
-        }
+//
+//        // Validate business rules
+//        // ADDED METHOD to validate additional business rules as per requirements
+//        ValidationResult result = validateTradeBusinessRules(tradeDTO);
+//        if (!result.isValid()){
+//            throw new RuntimeException("Trade Business Rules failed because of the following errors: " + String.join(", ", result.getErrors()));
+//        }
 
         validateTradeCreation(tradeDTO);
 
@@ -93,22 +93,15 @@ public class TradeService {
         Trade trade = mapDTOToEntity(tradeDTO);
         // mapDTOToEntity does not populate the trade status or trade user from the DTO
         // so I have set trade status and trade user
-        TradeStatus tradeStatus = new TradeStatus();
-        tradeStatus.setTradeStatus(tradeDTO.getTradeStatus());
-        trade.setTradeStatus(tradeStatus);
+//        TradeStatus tradeStatus = new TradeStatus();
+//        tradeStatus.setTradeStatus(tradeDTO.getTradeStatus());
+//        trade.setTradeStatus(tradeStatus);
 //        ApplicationUser tradeUser = new ApplicationUser();
 //        // Application User has a first name and last name field
 //        // However tradeDTO has tradeUserName which is s combination of the two fields
 //        // which means tradeDTO tradeUserName needs to be separated so both fields can
 //        // be set within the Application User object and used to map to the trade entity
-//        tradeUser.setId(tradeDTO.getTraderUserId());
-//        String fullName = tradeDTO.getTraderUserName();
-//        String[] nameSplit = fullName.split("\\s+",2);
-//        String firstName = nameSplit[0];
-//        String lastName = nameSplit.length > 1 ? nameSplit[1] : null;
-//        tradeUser.setFirstName(firstName);
-//        tradeUser.setLastName(lastName);
-//        trade.setTraderUser(tradeUser);
+
         trade.setVersion(1);
         trade.setActive(true);
         trade.setCreatedDate(LocalDateTime.now());
@@ -129,6 +122,13 @@ public class TradeService {
 
         // Create trade legs and cashflows
         createTradeLegsWithCashflows(tradeDTO, savedTrade);
+
+        // Validate business rules
+        // ADDED METHOD to validate additional business rules as per requirements
+        ValidationResult result = validateTradeBusinessRules(tradeDTO);
+        if (!result.isValid()){
+            throw new RuntimeException("Trade Business Rules failed because of the following errors: " + String.join(", ", result.getErrors()));
+        }
 
         logger.info("Successfully created trade with ID: {}", savedTrade.getTradeId());
         return savedTrade;
@@ -318,6 +318,13 @@ public class TradeService {
 
         // Create new trade legs and cashflows
         createTradeLegsWithCashflows(tradeDTO, savedTrade);
+
+        // Validate business rules
+        // ADDED METHOD to validate additional business rules as per requirements
+        ValidationResult result = validateTradeBusinessRules(tradeDTO);
+        if (!result.isValid()){
+            throw new RuntimeException("Trade Business Rules failed because of the following errors: " + String.join(", ", result.getErrors()));
+        }
 
         logger.info("Successfully amended trade with ID: {}", savedTrade.getTradeId());
         return savedTrade;
@@ -615,7 +622,7 @@ public class TradeService {
     }
 
     // NEW METHODS: I have added a collection of new validation methods
-    // to be invoked in the createTrade() call.
+    // to be invoked in the createTrade() and amendTrade() call.
 
     // Validate Trade Business Rules calls the validation created for: dates, trade legs and reference data
 
@@ -661,38 +668,44 @@ public class TradeService {
 
         // Validate essential reference data is populated
         if (tradeDTO.getBookId() == null || tradeDTO.getBookName() == null) {
-            referenceValidationResult.addError("Book Id or Book Name cannot be null ");
+            referenceValidationResult.addError("Book id or name cannot be null ");
         }
         if (tradeDTO.getCounterpartyId() == null || tradeDTO.getCounterpartyName()== null) {
-            referenceValidationResult.addError("Counterparty details cannot be null");
+            referenceValidationResult.addError("Counterparty id or name cannot be null");
         }
         if (tradeDTO.getTradeStatus() == null) {
             referenceValidationResult.addError("Trade status not found or not set." +
                     " Chose from (NEW/AMENDED/LIVE/TERMINATED/DEAD/CANCELED");
         }
-        if (tradeDTO.getTraderUserId() == null || tradeDTO.getTraderUserName() == null){
-            referenceValidationResult.addError("Trade User details cannot be null");
+        if (tradeDTO.getTraderUserId() == null && tradeDTO.getTraderUserName() == null){
+            referenceValidationResult.addError("Trade user id or name cannot be null");
         }
 
         // User, book, and counterparty must be active in the system
-        Trade trade = mapDTOToEntity(tradeDTO);
 
 
         Optional<Book> bookOptional = bookRepository.findByBookName(tradeDTO.getBookName());
         Book book = bookOptional.orElse(null);
 
+        if (book != null && !book.isActive()) {
+            referenceValidationResult.addError("Book must be active");
+        }
+
         Optional<Counterparty> counterpartyOptional = counterpartyRepository.findByName(tradeDTO.getCounterpartyName());
         Counterparty counterparty = counterpartyOptional.orElse(null);
 
-        Optional<ApplicationUser> applicationUserOptional = applicationUserRepository.findById(tradeDTO.getTraderUserId());
-        ApplicationUser applicationUser = applicationUserOptional.orElse(null);
-
-        if (book != null && !book.isActive()) {
-            referenceValidationResult.addError("Book must be active ");
-        }
         if(counterparty != null && !counterparty.isActive()){
             referenceValidationResult.addError("Counterparty must be active");
         }
+
+        String[] nameParts = tradeDTO.getTraderUserName().trim().split("\\s+");
+        String dtoFirstName = "";
+        if (nameParts.length >= 1) {
+            dtoFirstName = nameParts[0];
+        }
+        Optional<ApplicationUser> applicationUserOptional = applicationUserRepository.findByFirstName(dtoFirstName);
+        ApplicationUser applicationUser = applicationUserOptional.orElse(null);
+
         if(applicationUser != null && !applicationUser.isActive()){
             referenceValidationResult.addError("User must be active");
         }
@@ -706,37 +719,55 @@ public class TradeService {
             legsValidationResult.addError("Two trade legs are required.");
         }
 
-        //  Compare both legs
-        assert legs != null;
-        TradeLegDTO leg1 = legs.getFirst();
-        TradeLegDTO leg2 = legs.getLast();
-
-        //    Both legs must have identical maturity dates
-        //    How can the maturity date of the trade legs be accessed
-
-        //    Legs must have opposite pay/receive flags
-        if(leg1.getPayReceiveFlag().equalsIgnoreCase(leg2.getPayReceiveFlag())){
-            legsValidationResult.addError("Legs must have opposite pay/receive flags");
-        }
 
         for(TradeLegDTO leg : legs){
-            //   Check if leg type exists
+            String legType = leg.getLegType();
 
-            if (leg.getLegType() == null){
-                legsValidationResult.addError("Leg type cannot be null. " +
-                        "Each leg should have type that is either Floating / Fixed");
+            //   Check if leg type exists
+            if (legType == null || legType.isBlank()){
+                legsValidationResult.addError("Leg type is required (Fixed or Floating)");
+                continue;
             }
-            //    Floating legs must have an index specified
-            if(leg.getLegType().equals("Floating")) {
-                if (leg.getIndexId() == null || leg.getIndexName() == null) {
-                    legsValidationResult.addError("Floating legs must have an index specified");
+
+            switch (legType.toLowerCase()){
+                case "floating" -> {
+                    if (leg.getIndexId() == null){
+                        legsValidationResult.addError("Leg id: "+ leg.getLegId() +" - Floating legs must have an index specified");
+                    }
+                }
+                case "fixed" -> {
+                    if(leg.getRate() == null || leg.getRate() < 0.0){
+                        legsValidationResult.addError("Leg id: "+ leg.getLegId() +" - Fixed legs must have a valid positive rate");
+                    }
+                }
+                default -> {
+                    legsValidationResult.addError("Leg id: "+ leg.getLegId() + " has an unknown leg type: " + legType);
                 }
             }
-            //    Fixed legs must have a valid rate
-            if(leg.getLegType().equals("Fixed")){
-                if(leg.getRate() == null || leg.getRate() < 0){
-                    legsValidationResult.addError("Fixed legs must have a valid positive rate");
-                }
+
+//            //    Floating legs must have an index specified
+//            if(leg.getLegType().equalsIgnoreCase("Floating")) {
+//                if (leg.getIndexId() == null || leg.getIndexName() == null) {
+//                    legsValidationResult.addError("Floating legs must have an index specified");
+//                }
+//            }
+//            //    Fixed legs must have a valid rate
+//            if(leg.getLegType().equalsIgnoreCase("Fixed")){
+//                if(leg.getRate() == null || leg.getRate() < 0){
+//                    legsValidationResult.addError("Fixed legs must have a valid positive rate");
+//                }
+//            }
+
+            //  Compare both legs
+            TradeLegDTO leg1 = legs.getFirst();
+            TradeLegDTO leg2 = legs.getLast();
+
+            //    Both legs must have identical maturity dates
+            //    How can the maturity date of the trade legs be accessed
+
+            //    Legs must have opposite pay/receive flags
+            if(leg1.getPayReceiveFlag().equalsIgnoreCase(leg2.getPayReceiveFlag())){
+                legsValidationResult.addError("Legs must have opposite pay/receive flags");
             }
         }
         return legsValidationResult;
