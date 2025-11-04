@@ -79,13 +79,6 @@ public class TradeService {
             tradeDTO.setTradeId(generatedTradeId);
             logger.info("Generated trade ID: {}", generatedTradeId);
         }
-//
-//        // Validate business rules
-//        // ADDED METHOD to validate additional business rules as per requirements
-//        ValidationResult result = validateTradeBusinessRules(tradeDTO);
-//        if (!result.isValid()){
-//            throw new RuntimeException("Trade Business Rules failed because of the following errors: " + String.join(", ", result.getErrors()));
-//        }
 
         validateTradeCreation(tradeDTO);
 
