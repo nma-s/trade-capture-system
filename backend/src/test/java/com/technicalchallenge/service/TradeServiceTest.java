@@ -26,10 +26,16 @@ import static org.mockito.Mockito.*;
 class TradeServiceTest {
 
     @Mock
-    private ScheduleRepository scheduleRepository;
+    private ApplicationUserRepository applicationUserRepository;
 
     @Mock
     private LegTypeRepository legTypeRepository;
+
+    @Mock
+    private PayRecRepository payRecRepository;
+
+    @Mock
+    private ScheduleRepository scheduleRepository;
 
     @Mock
     private BookRepository bookRepository;
@@ -57,9 +63,11 @@ class TradeServiceTest {
 
     private TradeDTO tradeDTO;
     private Trade trade;
+
 //    Added fields for book and counterParty
     private Book book;
     private Counterparty counterParty;
+    private ApplicationUser applicationUser;
 
     @BeforeEach
     void setUp() {
@@ -70,14 +78,23 @@ class TradeServiceTest {
         tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
         tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
 
+        //  Additional validation rules require the TradeLegDTO PayRecieveFlag and not to be null
         TradeLegDTO leg1 = new TradeLegDTO();
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
+        //  Additional setup
+        leg1.setLegId(1L);
+        leg1.setPayReceiveFlag("Receive");
+        leg1.setLegType("Fixed");
         leg1.setCalculationPeriodSchedule("3M");
 
         TradeLegDTO leg2 = new TradeLegDTO();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.0);
+        //  Additional setup
+        leg2.setLegId(2L);
+        leg2.setPayReceiveFlag("Pay");
+        leg2.setLegType("Fixed");
         leg2.setCalculationPeriodSchedule("3M");
 
         tradeDTO.setTradeLegs(Arrays.asList(leg1, leg2));
@@ -90,24 +107,41 @@ class TradeServiceTest {
 //     Set book and counterparty
 
         book = new Book();
+        book.setId(1L);
         book.setBookName("FX-BOOK-2");
+        book.setActive(true);
 
         counterParty = new Counterparty();
+        counterParty.setId(1L);
         counterParty.setName("GiantCash");
+        counterParty.setActive(true);
 
+        applicationUser = new ApplicationUser();
+        applicationUser.setActive(true);
+
+
+        tradeDTO.setBookName(book.getBookName());
+        tradeDTO.setCounterpartyName(counterParty.getName());
+        //
+        tradeDTO.setBookId(book.getId());
+        tradeDTO.setCounterpartyId(counterParty.getId());
+        tradeDTO.setTraderUserId(1L);
+        tradeDTO.setTraderUserName("Simon King");
     }
 
     @Test
     void testCreateTrade_Success() {
 
-        tradeDTO.setBookName(book.getBookName());
-        tradeDTO.setCounterpartyName(counterParty.getName());
-//        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
+
+//      tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
 
         // Given
-        when(bookRepository.findByBookName("FX-BOOK-2")).thenReturn(Optional.of(new com.technicalchallenge.model.Book()));
-        when(counterpartyRepository.findByName("GiantCash")).thenReturn(Optional.of(new com.technicalchallenge.model.Counterparty()));
+        when(bookRepository.findByBookName("FX-BOOK-2")).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName("GiantCash")).thenReturn(Optional.of(counterParty));
         when(tradeStatusRepository.findByTradeStatus("NEW")).thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
+        when(legTypeRepository.findByType(any(String.class))).thenReturn(Optional.of(new LegType()));
+        when(payRecRepository.findByPayRec(any(String.class))).thenReturn(Optional.of(new PayRec()));
+        when(applicationUserRepository.findByFirstName(any(String.class))).thenReturn(Optional.of(applicationUser));
         when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new com.technicalchallenge.model.TradeLeg());
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
@@ -176,6 +210,8 @@ class TradeServiceTest {
 
     @Test
     void testAmendTrade_Success() {
+
+        tradeDTO.setTradeStatus("AMENDED");
         // Given
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
         when(tradeStatusRepository.findByTradeStatus("AMENDED")).thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
