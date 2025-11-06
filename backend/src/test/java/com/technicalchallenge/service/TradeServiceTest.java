@@ -13,7 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,6 +23,12 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TradeServiceTest {
+
+    @Mock
+    private ScheduleRepository scheduleRepository;
+
+    @Mock
+    private LegTypeRepository legTypeRepository;
 
     @Mock
     private BookRepository bookRepository;
@@ -64,10 +72,12 @@ class TradeServiceTest {
         TradeLegDTO leg1 = new TradeLegDTO();
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
+        leg1.setCalculationPeriodSchedule("3M");
 
         TradeLegDTO leg2 = new TradeLegDTO();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.0);
+        leg2.setCalculationPeriodSchedule("3M");
 
         tradeDTO.setTradeLegs(Arrays.asList(leg1, leg2));
 
@@ -199,12 +209,69 @@ class TradeServiceTest {
         // Candidates need to implement proper cashflow testing
 
         // Given - setup is incomplete
-        TradeLeg leg = new TradeLeg();
-        leg.setNotional(BigDecimal.valueOf(1000000));
+
+        Cashflow cashflow = new Cashflow();
+
+        Schedule schedule = new Schedule();
+        schedule.setId(1L);
+        schedule.setSchedule("3M");
+
+        //  Set up TradeLegs
+        TradeLeg leg1 = new TradeLeg();
+        leg1.setNotional(BigDecimal.valueOf(1000000));
+        leg1.setRate(0.05);
+        leg1.setLegId(1L);
+        leg1.setCalculationPeriodSchedule(schedule);
+//        leg1.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
+
+        TradeLeg leg2 = new TradeLeg();
+        leg2.setNotional(BigDecimal.valueOf(1000000));
+        leg2.setRate(0.05);
+        leg2.setLegId(2L);
+        leg2.setCalculationPeriodSchedule(schedule);
+//        leg2.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
+
+        trade.setTradeLegs(Arrays.asList(leg1,leg2));
+        trade.setTradeStartDate(LocalDate.of(2025, 1, 17));
+        trade.setTradeMaturityDate(LocalDate.of(2026,1,17));
+
+        LegType legType = new LegType();
+        legType.setType("Fixed");
+
+
+        //    Set up TradeDTO (set required fields - book, counterparty, trade status)
+        tradeDTO.setBookName(book.getBookName());
+        tradeDTO.setCounterpartyName(counterParty.getName());
+        tradeDTO.setTradeStatus("NEW");
+
+
+
+        when(bookRepository.findByBookName(any(String.class))).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName(any(String.class))).thenReturn(Optional.of(counterParty));
+        when(tradeStatusRepository.findByTradeStatus(any(String.class))).thenReturn(Optional.of(new TradeStatus()));
+        when(legTypeRepository.findByType("Fixed")).thenReturn(Optional.of(legType));
+        when(scheduleRepository.findBySchedule(any(String.class))).thenReturn(Optional.of(schedule));
+//        when(cashflowRepository.findById(any(Long.class))).thenReturn(Optional.of(new Cashflow()));
+//        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
+//        when(cashflowRepository.save(any(Cashflow.class))).thenReturn(cashflow);
+
 
         // When - method call is missing
+        Trade result = tradeService.createTrade(tradeDTO);
+
+//        int cashflowCountLeg1 = result.getTradeLegs().get(0).getCashflows().size();
+//        int cashflowCountLeg2 = result.getTradeLegs().get(1).getCashflows().size();
+//        int cashflowCount = cashflowCountLeg2 + cashflowCountLeg1;
+        int cashflowCount = 0;
+
+        for(int i = 0; i < result.getTradeLegs().size(); i++){
+
+            cashflowCount += result.getTradeLegs().get(i).getCashflows().size();
+        }
 
         // Then - assertions are wrong/missing
-        assertEquals(1, 12); // This will always fail - candidates need to fix
+        assertEquals(4, cashflowCount); // This will always fail - candidates need to fix
     }
 }
