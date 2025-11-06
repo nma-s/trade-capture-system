@@ -5,6 +5,9 @@ import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -588,4 +591,95 @@ public class TradeService {
         // For simplicity, using a static variable. In real scenario, this should be atomic and thread-safe.
         return 10000L + tradeRepository.count();
     }
+
+    public List<Trade> findBySearch(String counterpartyName,
+                                    String bookName,
+                                    String traderUserName,
+                                    String tradeStatus,
+                                    String startDate,
+                                    String endDate) {
+
+        Specification<Trade> spec = Specification.where(null);
+
+        if(counterpartyName != null){
+           spec = spec.and(TradeSpecification.hasCounterpartyName(counterpartyName));
+        }
+
+        if(bookName != null){
+            spec = spec.and(TradeSpecification.hasBookName(bookName));
+        }
+
+        if(traderUserName != null){
+            spec = spec.and(TradeSpecification.hasTraderName(traderUserName));
+        }
+
+        if(tradeStatus != null){
+            spec = spec.and(TradeSpecification.hasTradeStatus(tradeStatus));
+        }
+
+        if(startDate != null && endDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBetween(startDate,endDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateFrom(startDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBefore(endDate));
+        }
+
+        return tradeRepository.findAll(spec);
+    }
+
+
+    public List<Trade> findByPageFilter(String counterpartyName,
+                                    String bookName,
+                                    String traderUserName,
+                                    String tradeStatus,
+                                    String startDate,
+                                    String endDate,
+                                    int pageNo,
+                                    int pageSize) {
+
+        Pageable pageable = PageRequest.of(pageNo,pageSize);
+
+        Specification<Trade> spec = Specification.where(null);
+
+        if(counterpartyName != null){
+            spec = spec.and(TradeSpecification.hasCounterpartyName(counterpartyName));
+        }
+
+        if(bookName != null){
+            spec = spec.and(TradeSpecification.hasBookName(bookName));
+        }
+
+        if(traderUserName != null){
+            spec = spec.and(TradeSpecification.hasTraderName(traderUserName));
+        }
+
+        if(tradeStatus != null){
+            spec = spec.and(TradeSpecification.hasTradeStatus(tradeStatus));
+        }
+
+        if(startDate != null && endDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBetween(startDate,endDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateFrom(startDate));
+        }
+
+        if(startDate != null){
+            spec = spec.and(TradeSpecification.hasStartDateBefore(endDate));
+        }
+
+        return tradeRepository.findAll(spec,pageable).getContent();
+    }
+
+//    public List<Trade> findByRsql(String query) {
+//        return tradeRepository.findAll(TradeSpecification.rsql(query));
+//    }
+
+
 }
