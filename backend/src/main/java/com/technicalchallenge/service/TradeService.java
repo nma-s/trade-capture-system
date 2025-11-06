@@ -6,6 +6,9 @@ import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.validators.ValidationResult;
 import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
+//import org.springframework.security.core.Authentication;
+//import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -16,7 +19,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 @Service
 @Transactional
@@ -57,6 +63,10 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+    @Autowired
+    private UserPrivilegeRepository userPrivilegeRepository;
+    @Autowired
+    private UserProfileRepository userProfileRepository;
 
     public List<Trade> getAllTrades() {
         logger.info("Retrieving all trades");
@@ -70,6 +80,11 @@ public class TradeService {
 
     @Transactional
     public Trade createTrade(TradeDTO tradeDTO) {
+//        String loggedOnUserId = getCurrentUserId();
+//        boolean isUserAllowed = validateUserPrivileges(getCurrentUserId(),"CREATE",tradeDTO);
+//        if(!isUserAllowed){
+//            throw new RuntimeException("You do not have the permissions to create a trade");
+//        }
         logger.info("Creating new trade with ID: {}", tradeDTO.getTradeId());
 
         // Generate trade ID if not provided
@@ -738,19 +753,6 @@ public class TradeService {
                 }
             }
 
-//            //    Floating legs must have an index specified
-//            if(leg.getLegType().equalsIgnoreCase("Floating")) {
-//                if (leg.getIndexId() == null || leg.getIndexName() == null) {
-//                    legsValidationResult.addError("Floating legs must have an index specified");
-//                }
-//            }
-//            //    Fixed legs must have a valid rate
-//            if(leg.getLegType().equalsIgnoreCase("Fixed")){
-//                if(leg.getRate() == null || leg.getRate() < 0){
-//                    legsValidationResult.addError("Fixed legs must have a valid positive rate");
-//                }
-//            }
-
             //  Compare both legs
             TradeLegDTO leg1 = legs.getFirst();
             TradeLegDTO leg2 = legs.getLast();
@@ -765,4 +767,49 @@ public class TradeService {
         }
         return legsValidationResult;
     }
+
+//    public String getCurrentUserId() {
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        ApplicationUser principal = (ApplicationUser) auth.getPrincipal();
+//        Long id = principal.getId();
+//        return id.toString();
+//    }
+
+    public boolean validateUserPrivileges(String userId, String operation, TradeDTO tradeDTO){
+
+        if (userId == null || userId.isBlank()){
+            throw new RuntimeException("userId is null");
+        }
+
+        if (operation == null || operation.isBlank()){
+            throw new RuntimeException("Operation is null");
+        }
+
+        //   Checking to see if user exists in user repository
+        ApplicationUser user = applicationUserRepository.findByLoginId(userId).orElse(null);
+
+        if (user == null){
+            throw new RuntimeException("User with id {" + userId + "} does not exist in the system ");
+        }
+        // need to find userProfile and retrieve the users role
+        UserProfile userProfile = user.getUserProfile();
+        String userRole = userProfile.getUserType();
+
+        // Map roles to permissions
+        Map<String, List<String>> rolePermissions = java.util.Map.of(
+                "TRADER_SALES", List.of("CREATE", "AMEND", "TERMINATE", "CANCEL"),
+                "SALES", List.of("CREATE", "AMEND"),
+                "MO", List.of("AMEND", "VIEW"),
+                "SUPPORT", List.of("VIEW"),
+                "ADMIN", List.of("CREATE", "AMEND", "TERMINATE", "CANCEL", "VIEW"),
+                "SUPERUSER", List.of("CREATE", "AMEND", "TERMINATE", "CANCEL", "VIEW")
+        );
+
+        // Check if operation is allowed
+        boolean isValid = rolePermissions.getOrDefault(userRole.toUpperCase(), List.of()).contains(operation.toUpperCase());
+
+        return isValid;
+
+    }
+
 }
