@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -214,7 +215,7 @@ class TradeServiceTest {
 
         Schedule schedule = new Schedule();
         schedule.setId(1L);
-        schedule.setSchedule("3M");
+        schedule.setSchedule("6M");
 
         //  Set up TradeLegs
         TradeLeg leg1 = new TradeLeg();
@@ -222,22 +223,18 @@ class TradeServiceTest {
         leg1.setRate(0.05);
         leg1.setLegId(1L);
         leg1.setCalculationPeriodSchedule(schedule);
-//        leg1.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
+        leg1.setCashflows(Arrays.asList(cashflow,cashflow));
 
         TradeLeg leg2 = new TradeLeg();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.05);
         leg2.setLegId(2L);
         leg2.setCalculationPeriodSchedule(schedule);
-//        leg2.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
+        leg2.setCashflows(Arrays.asList(new Cashflow(),new Cashflow()));
 
         trade.setTradeLegs(Arrays.asList(leg1,leg2));
         trade.setTradeStartDate(LocalDate.of(2025, 1, 17));
         trade.setTradeMaturityDate(LocalDate.of(2026,1,17));
-
-        LegType legType = new LegType();
-        legType.setType("Fixed");
-
 
         //    Set up TradeDTO (set required fields - book, counterparty, trade status)
         tradeDTO.setBookName(book.getBookName());
@@ -245,25 +242,17 @@ class TradeServiceTest {
         tradeDTO.setTradeStatus("NEW");
 
 
-
         when(bookRepository.findByBookName(any(String.class))).thenReturn(Optional.of(book));
         when(counterpartyRepository.findByName(any(String.class))).thenReturn(Optional.of(counterParty));
-        when(tradeStatusRepository.findByTradeStatus(any(String.class))).thenReturn(Optional.of(new TradeStatus()));
-        when(legTypeRepository.findByType("Fixed")).thenReturn(Optional.of(legType));
+        when(tradeStatusRepository.findByTradeStatus(any(String.class))).thenReturn(Optional.of(new TradeStatus()));//        when(legTypeRepository.findByType("Fixed")).thenReturn(Optional.of(legType));
         when(scheduleRepository.findBySchedule(any(String.class))).thenReturn(Optional.of(schedule));
-//        when(cashflowRepository.findById(any(Long.class))).thenReturn(Optional.of(new Cashflow()));
-//        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
-        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
         when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(new TradeLeg());
-//        when(cashflowRepository.save(any(Cashflow.class))).thenReturn(cashflow);
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
 
         // When - method call is missing
         Trade result = tradeService.createTrade(tradeDTO);
 
-//        int cashflowCountLeg1 = result.getTradeLegs().get(0).getCashflows().size();
-//        int cashflowCountLeg2 = result.getTradeLegs().get(1).getCashflows().size();
-//        int cashflowCount = cashflowCountLeg2 + cashflowCountLeg1;
         int cashflowCount = 0;
 
         for(int i = 0; i < result.getTradeLegs().size(); i++){
